@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define n 12
+#define n 15
 
-int a[] = {111, 123, 2343, 234, 5, 26, 17, 78, 49, 100,1,1000000};
+int a[] = {111, 123, 2343, 234, 5, 26, 17, 78, 49, 100,1,1000000,0,11000000,12};
 
 int a2[1000];
 
@@ -48,8 +48,11 @@ int main(int argc, char *argv[])
                 MPI_Send(&a[index], elements_per_process, MPI_INT, i, 0, MPI_COMM_WORLD); 
                 if (i == 1)
                 {
-                    MPI_Send(&min_value, elements_per_process, MPI_INT, i, 1, MPI_COMM_WORLD); 
+                    MPI_Send(&min_value, 1, MPI_INT, i, 1, MPI_COMM_WORLD); 
                 }
+            }
+            if (i == 1){
+                MPI_Send(&min_value, 1, MPI_INT, i, 1, MPI_COMM_WORLD); 
             }
             index = i * elements_per_process;
             int elements_left = n - index;
@@ -76,6 +79,8 @@ int main(int argc, char *argv[])
     else
     {
         int min_value;
+        MPI_Recv(&n_elements_recived, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&a2, n_elements_recived, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         if (pid == 1)
         {
             MPI_Recv(&min_value, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
@@ -86,8 +91,6 @@ int main(int argc, char *argv[])
             MPI_Recv(&min_value, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
             printf("MinValue of %d from %d to %d\n", min_value, pid - 1, pid);
         }
-        MPI_Recv(&n_elements_recived, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-        MPI_Recv(&a2, n_elements_recived, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
         int partial_array_minValue = min_value;
         for (int i = 0; i < n_elements_recived; i++)
