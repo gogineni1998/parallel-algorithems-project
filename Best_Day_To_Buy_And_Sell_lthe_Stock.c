@@ -12,13 +12,14 @@ int main(int argc, char *argv[])
 {
     int pid, np, elements_per_process, n_elements_recived, best_price = -1;
     MPI_Status status;
-
+    double t1, t2;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &pid);
     MPI_Comm_size(MPI_COMM_WORLD, &np);
-    printf("processor %d of %d\n", pid, np);
+    printf("Executing process %d of %d\n", pid, np);
     int sum = 0;
     if (pid == 0) {
+        t1 = MPI_Wtime();
         int index, i;
         int min_value = 2147483647;
         elements_per_process = n / np;
@@ -39,7 +40,6 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        printf("Minimum value calculated by root process : %d\n\n", min_value);
         if (np > 1) {
             for (i = 1; i < np - 1; i++)
             {
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
                     MPI_Send(&min_value, 1, MPI_INT, i, 1, MPI_COMM_WORLD); 
                 }
             }
-            if (i == 1){
+            if (i == 1) {
                 MPI_Send(&min_value, 1, MPI_INT, i, 1, MPI_COMM_WORLD); 
             }
             index = i * elements_per_process;
@@ -59,21 +59,20 @@ int main(int argc, char *argv[])
             MPI_Send(&elements_left, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
             MPI_Send(&a[index], elements_left, MPI_INT, i, 0, MPI_COMM_WORLD);
             int tmp;
-            // MPI_Recv(&tmp, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-            // printf("imp %d\n",tmp);
-            // if(min_value > tmp) {
-            //     min_value = tmp;
-            // }
             for(int i=1;i<np;i++) {
                 MPI_Recv(&tmp, 1, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
                 if(tmp > best_price) {
                     best_price = tmp;
                 }
             }
-            printf("best price value of array is : %d\n\n", best_price);
+            t2 = MPI_Wtime();
+            printf("best of the best price value of the data is : %d\n\n", best_price);
+            printf( "Elapsed time is %f\n", t2 - t1 );
         }
         else {
-            printf("best price value of array is : %d\n\n", best_price);
+            t2 = MPI_Wtime();
+            printf("best of the best price value of the data is : %d\n\n", best_price);
+            printf( "Elapsed time is %f\n", t2 - t1 );
         }
     }
     else
@@ -81,15 +80,9 @@ int main(int argc, char *argv[])
         int min_value;
         MPI_Recv(&n_elements_recived, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&a2, n_elements_recived, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-        if (pid == 1)
+        if (pid >= 1)
         {
             MPI_Recv(&min_value, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-            printf("MinValue of %d from %d to %d\n", min_value, pid - 1, pid);
-        }
-        if (pid > 1)
-        {
-            MPI_Recv(&min_value, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-            printf("MinValue of %d from %d to %d\n", min_value, pid - 1, pid);
         }
 
         int partial_array_minValue = min_value;
@@ -106,7 +99,6 @@ int main(int argc, char *argv[])
             }
         }
         MPI_Send(&best_price, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
-        printf("Partial min value calculated by process %d : %d\n", pid, partial_array_minValue);
         if (pid < np - 1)
         {
             MPI_Send(&partial_array_minValue, 1, MPI_INT, pid + 1, 1, MPI_COMM_WORLD);
